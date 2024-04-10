@@ -1,0 +1,56 @@
+version: '3.3'
+services:
+  grafana:
+    depends_on:
+      - influxdb
+    container_name: grafana
+    links:
+      - influxdb
+    ports:
+      - '3000:3000'
+    volumes:
+      - '/monitoring/grafana:/var/lib/grafana'
+    restart: unless-stopped
+    image: grafana/grafana
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,\
+                          grafana-influxdb-08-datasource,\
+                          grafana-kairosdb-datasource,\
+                          grafana-piechart-panel,\
+                          grafana-simple-json-datasource,\
+                          grafana-worldmap-panel"
+      GF_SECURITY_ADMIN_USER: 
+      GF_SECURITY_ADMIN_PASSWORD: 
+
+  influxdb:
+    container_name: influxdb
+    volumes:
+      - '/monitoring/influxdb:/var/lib/influxdb'
+    ports:
+      - '8086:8086'
+      - '8083:8083'
+    restart: unless-stopped
+    image: 'influxdb:1.8.4'
+    environment:
+      INFLUXDB_USER: 
+      INFLUXDB_USER_PASSWORD: 
+
+  telegraf:
+    container_name: telegraf
+    image: telegraf
+    depends_on:
+      - influxdb
+    tty: true
+    network_mode: "host"
+    privileged: true
+    environment:
+      HOST_PROC: /rootfs/proc
+      HOST_SYS: /rootfs/sys
+      HOST_ETC: /rootfs/etc
+      HOST_VAR: /rootfs/var
+      HOST_RUN: /rootfs/run
+      HOST_MOUNT_PREFIX: /rootfs
+    volumes:
+      - '/monitoring/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro'
+      - '/:/rootfs:ro'
+    restart: unless-stopped
